@@ -28,6 +28,10 @@ use diem_vm::DiemVM;
 use diemdb::DiemDB;
 use executor::{
     db_bootstrapper::{generate_waypoint, maybe_bootstrap},
+    metrics::{
+        DIEM_EXECUTOR_COMMIT_BLOCKS_SECONDS, DIEM_EXECUTOR_EXECUTE_BLOCK_SECONDS,
+        DIEM_EXECUTOR_VM_EXECUTE_BLOCK_SECONDS,
+    },
     Executor,
 };
 use executor_types::BlockExecutor;
@@ -306,6 +310,23 @@ impl TransactionExecutor {
                 total_transactions as f64 / start_time.elapsed().as_secs_f64(),
             );
         }
+
+        info!(
+            "Final report: total VM time: {:0} secs, total execute time: {} secs, total commit time: {} secs",
+            DIEM_EXECUTOR_VM_EXECUTE_BLOCK_SECONDS.get_sample_sum(),
+            DIEM_EXECUTOR_EXECUTE_BLOCK_SECONDS.get_sample_sum(),
+            DIEM_EXECUTOR_COMMIT_BLOCKS_SECONDS.get_sample_sum(),
+        );
+        const NANOS_PER_SEC: f64 = 1_000_000_000.0;
+        info!(
+            "Per transaction: VM time: {:0} us, execute time: {:0} us, commit time: {} us",
+            DIEM_EXECUTOR_VM_EXECUTE_BLOCK_SECONDS.get_sample_sum() * NANOS_PER_SEC
+                / total_transactions as f64,
+            DIEM_EXECUTOR_EXECUTE_BLOCK_SECONDS.get_sample_sum() * NANOS_PER_SEC
+                / total_transactions as f64,
+            DIEM_EXECUTOR_COMMIT_BLOCKS_SECONDS.get_sample_sum() * NANOS_PER_SEC
+                / total_transactions as f64,
+        );
     }
 }
 
